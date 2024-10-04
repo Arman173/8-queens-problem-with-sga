@@ -11,8 +11,9 @@ import sys
 
 # GLOBAL VARIABLES (SETTING AND OTHERS)
 # PYGAME SETTINGS
+N = 8
 BOX_WIDTH = 60
-GRID_DIMENSION = 8
+GRID_DIMENSION = N
 WINDOW_WIDTH = WINDOW_HEIGHT = BOX_WIDTH * GRID_DIMENSION
 # colors
 WHITE_COLOR = (255, 255, 255)
@@ -21,7 +22,7 @@ QUEEN_COLOR = (255, 0, 0)  # Red for queens
 
 # SGA CONST AND SETTINGS
 GENES = [1,2,3,4,5,6,7,8]
-POPULATION_SIZE = 20
+POPULATION_SIZE = 50
 
 # CLASSES
 class Chromosome:
@@ -38,7 +39,7 @@ class Chromosome:
     def tuples(self):
         tuplesList = []
         for i in range(0, self.length, 2):
-            t = (i, i+1)
+            t = (self.positions[i], self.positions[i+1])
             tuplesList.append(t)
         return tuplesList
     
@@ -82,17 +83,43 @@ class Chromosome:
                     self.fitness += 1
         
         # check diagonals
+        posList = self.tuples()
+        # print(self.positions)
+        # print(posList)
+        for pos in posList:
+            # print(pos)
+            x, y = pos
+            for queen in posList:
+                # print("\t",queen)
+                # Recorrer diagonal principal (↘ y ↖)
+                for i in range(1, N):
+                    # ↘ Diagonal hacia abajo-derecha
+                    if x + i < N and y + i < N:
+                        if (x + i, y + i) == queen:
+                                self.fitness += 1
+                        # diagonales.append((x + i, y + i))
+                    
+                    # ↖ Diagonal hacia arriba-izquierda
+                    if x - i >= 1 and y - i >= 1:
+                        if (x - i, y - i) == queen:
+                                self.fitness += 1
+                        # diagonales.append((x - i, y - i))
+
+                # Recorrer diagonal secundaria (↙ y ↗)
+                for i in range(1, N):
+                    # ↙ Diagonal hacia abajo-izquierda
+                    if x + i < N and y - i >= 1:
+                        if (x + i, y - i) == queen:
+                                self.fitness += 1
+                        # diagonales.append((x + i, y - i))
+                    
+                    # ↗ Diagonal hacia arriba-derecha
+                    if x - i >= 1 and y + i < N:
+                        if (x - i, y + i) == queen:
+                                self.fitness += 1
+                        # diagonales.append((x - i, y + i))
         
         return self.fitness
-
-        # if len(target) != self.length:
-        #     print("Incompatible",self.info,"chromosome, lengths are not equals")
-        #     return self.length
-        # self.fitness = 0
-        # for i in range(0, self.length):
-        #     if self.info[i] != target[i]:
-        #         self.fitness += 1
-        # return self.fitness
     
     def mutation(self) -> None:
         for i in range(0, self.length):
@@ -117,6 +144,12 @@ def draw_grid(display):
             else:
                 color = BLACK_COLOR
             pygame.draw.rect(display, color, pygame.Rect(c * BOX_WIDTH, r * BOX_WIDTH, BOX_WIDTH, BOX_WIDTH))
+
+def draw_queens(display, queens: list):
+    for queen in queens:
+        x, y = queen
+        pygame.draw.circle(display, QUEEN_COLOR, ((x-0.5)*BOX_WIDTH,(y-0.5)*BOX_WIDTH), BOX_WIDTH/2)
+    # pygame.draw.circle(display, QUEEN_COLOR, (WINDOW_WIDTH/2, WINDOW_HEIGHT/2), BOX_WIDTH/2)
 
 # return a random gene from GENES (valid genes list)
 def ranGene():
@@ -152,7 +185,7 @@ def selection(population):
     # get the 50% index from population list, this is for get the top 50 of fitness
     nf = int(0.5*POPULATION_SIZE)
     for _ in range(0, n):
-        parents = random.choices(population[:nf], k=10)
+        parents = random.choices(population[:nf], k=17)
         parents = sorted(parents, key = lambda chromosome:chromosome.getFitness())
         child = Chromosome()
         child.crossover(parents[0], parents[1])
@@ -179,6 +212,7 @@ def main():
             found = True
     
     draw_grid(display)
+    draw_queens(display, population[0].tuples())
     pygame.display.flip()
 
     # wait for close event (click in close button window)
